@@ -6,7 +6,8 @@ import re
 ERR1="Sorry there was a problem ! :( Try restarting the program or check the internet connection."
 LIST_LINK="data/mangalist.csv"
 TEMP_FILE="data/mangalist_temp.csv"
-if not os.path.exists(LIST_LINK):os.makedirs("data/")
+if not os.path.exists("data/"):
+    os.makedirs("data/")
 def syntax_reminder():
     print("Syntax :")
     print("\t1) checkout <manga_name> # for searching and checking out mangas")
@@ -64,47 +65,51 @@ def handler(item):
         for i in range(0,len(num_chapters)):
             print(num_chapters[i].find('span').text)
         print("."*60)
-        print("Add this manga to your list ? (Y/N):")
-        answer=input(">>>>> ")
+        answer=''
+        while (answer.upper().strip() not in {"Y", "N"}):
+            print("Add this manga to your list ? (Y/N):")
+            answer=input(">>>>> ")
         if answer.upper()=="Y":
             add(manga_link)
 def checkout(name):
     link="https://mangakakalot.com/search/"+name.replace(' ','_')
-    #try:
-    session = requests.get(link)
-    if session.status_code==200:
-        print("Searching .....",session.url)
-        content=bs.BeautifulSoup(session.content,'html.parser')
-        results=content.find_all('span',{'class':'item-name'})
-        if results:
-            n=1
-            for result in results:
-                print("\t{}.\t{}".format(n,result.text.strip()))
-                n+=1
-            if n==2:
-                handler(results.pop())
+    try:
+        session = requests.get(link)
+        if session.status_code==200:
+            print("Searching .....",session.url)
+            content=bs.BeautifulSoup(session.content,'html.parser')
+            results=content.find_all('span',{'class':'item-name'})
+            if results:
+                n=1
+                for result in results:
+                    print("\t{}.\t{}".format(n,result.text.strip()))
+                    n+=1
+                if n==2:
+                    handler(results.pop())
+                else:
+                    runchoice=1
+                    while(runchoice):
+                        try:
+                            print("Which one of them?(Use Symbol Number):")
+                            choice=int(input(">>>>> "))
+                            handler(results[choice-1])
+                            runchoice=0
+                        except ValueError as v:
+                            print("Enter a valid integer.")
+                        except IndexError as i:
+                            print("Enter Numbers within range.")
             else:
-                runchoice=1
-                while(runchoice):
-                    #try:
-                    print("Which one of them?(Use Symbol Number):")
-                    choice=int(input(">>>>> "))
-                    handler(results[choice-1])
-                    runchoice=0
-                    #except ValueError as v:
-                       # print("Enter a valid integer.")
-                    #except IndexError as i:
-                        #print("Enter Numbers within range.")
+                print("No results found for :",name)
         else:
-            print("No results found for :",name)
-    else:
-        print("Sorry there was a problem connecting to the website :( Try again with valid query")
-    #except:
-       #print(ERR1)
+            print("Sorry there was a problem connecting to the website :( Try again with valid query")
+    except:
+        print(ERR1)
 
 def download_and_reset(link_ref,chapter_num_list,row):
-    print(f"Do you want to download all these chapters and set new pointer to Chapter {chapter_num_list[0]}?")
-    answer=input(">>>>> ")
+    answer=''
+    while(answer.upper().strip() not in {"Y","N"}):
+        print(f"Do you want to download all these chapters and set new pointer to Chapter {chapter_num_list[0]}?")
+        answer=input(">>>>> ")
     if answer.upper()=="Y":
         with open(TEMP_FILE, 'a') as tempfile:
             tempfile.write(f"{row[0]},{row[1]},{chapter_num_list[0]}\n")
@@ -122,6 +127,7 @@ def download_and_reset(link_ref,chapter_num_list,row):
                 with open(f"manga/{name}/Chapter {chapter}/{counter}.jpg",'wb') as file:
                     file.write(requests.get(link).content)
                 counter+=1
+        print("\tDONE !")
     else:
         with open(TEMP_FILE, 'a') as tempfile:
             tempfile.write(f'{row[0]},{row[1]},{row[2]}\n')
