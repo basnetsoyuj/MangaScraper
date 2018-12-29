@@ -10,7 +10,7 @@ def syntax_reminder():
     print("\t1) checkout <manga_name> # for searching and checking out mangas")
     print("\t2) exit # for exiting out at any point")
     print("\t3) refresh # to check if there are any updates to your selected manga lists")
-def add(content,link):
+def add(link):
     link1=link.replace("/manga/","/chapter/")
     print("Enter the initial chapter pointer to keep track :")
     looper=1
@@ -50,7 +50,7 @@ def handler(item):
     if(has_manga):
         print(has_manga, " is already in your mangalist ! Redirecting to the refresh function")
         print('.'*60)
-        refresh(has_manga)
+        refresh(has_manga,0)
     else:
         content=bs.BeautifulSoup(requests.get(manga_link).content,'html.parser')
         print("."*60)
@@ -68,7 +68,7 @@ def handler(item):
         print("Add this manga to your list ? (Y/N):")
         answer=input(">>>>> ")
         if answer.upper()=="Y":
-            add(content,manga_link)
+            add(manga_link)
 def checkout(name):
     link="https://mangakakalot.com/search/"+name.replace(' ','_')
     #try:
@@ -103,43 +103,68 @@ def checkout(name):
     #except:
        #print(ERR1)
 
-def download_and_reset(link_ref,chapter_num_list,manga):
-    with open(LIST_LINK,'r') as mangalist:
-        list_=csv.reader(mangalist)
-        next(list_)
-        i=1
-        with open(TEMP_FILE,'w') as f:
-            f.write("name,link,recent_chapter\n")
-        for row in list_:
-            with open(TEMP_FILE, 'a') as tempfile:
-                if row[0] == manga:
-                    print(f"Do you want to download all these chapters and set new pointer to Chapter {chapter_num_list[0]}?")
-                    answer=input(">>>>> ")
-                    if answer.upper()=="Y":
-                        for chapter in chapter_num_list:
-                            print(f"Downloading ....... Chapter {chapter}")
-                            content=bs.BeautifulSoup(requests.get(link_ref+chapter).content,'html.parser')
-                            images=content.find('div',{'class':'vung-doc'}).find_all('img')
-                            links=[x.attrs['src'] for x in images]
-                            counter=0
-                            if not os.path.exists('manga'):os.makedirs("manga")
-                            if not os.path.exists(f'manga/{manga}'):os.makedirs(f"manga/{manga}")
-                            if not os.path.exists(f'manga/{manga}/Chapter {chapter}'):os.makedirs(f'manga/{manga}/Chapter {chapter}')
-                            for link in links:
-                                with open(f"manga/{manga}/Chapter {chapter}/{counter}.jpg",'wb') as file:
-                                    file.write(requests.get(link).content)
-                                counter+=1
-                        tempfile.write(f"{row[0]},{row[1]},{chapter_num_list[0]}\n")
-                    else:
-                        tempfile.write(f"{row[0]},{row[1]},{row[2]}\n")
-                else:
-                    tempfile.write(f"{row[0]},{row[1]},{row[2]}\n")
-                break
-def refresh(manga=False):
+def download_and_reset(link_ref,chapter_num_list,manga,row):
+    print(f"Do you want to download all these chapters and set new pointer to Chapter {chapter_num_list[0]}?")
+    answer=input(">>>>> ")
+    if answer.upper()=="Y":
+        with open(TEMP_FILE, 'a') as tempfile:
+            tempfile.write(f"{row[0]},{row[1]},{chapter_num_list[0]}\n")
+        for chapter in chapter_num_list:
+            print(f"Downloading ....... Chapter {chapter}")
+            content=bs.BeautifulSoup(requests.get(link_ref+chapter).content,'html.parser')
+            images=content.find('div',{'class':'vung-doc'}).find_all('img')
+            links=[x.attrs['src'] for x in images]
+            counter=0
+            if not os.path.exists('manga'):os.makedirs("manga")
+            if not os.path.exists(f'manga/{manga}'):os.makedirs(f"manga/{manga}")
+            if not os.path.exists(f'manga/{manga}/Chapter {chapter}'):os.makedirs(f'manga/{manga}/Chapter {chapter}')
+            for link in links:
+                with open(f"manga/{manga}/Chapter {chapter}/{counter}.jpg",'wb') as file:
+                    file.write(requests.get(link).content)
+                counter+=1
+    else:
+        with open(TEMP_FILE, 'a') as tempfile:
+            tempfile.write(f'{row[0]},{row[1]},{row[2]}\n')
+def refresh(manga=False,iter_=0):
     if not os.path.isfile(LIST_LINK):
         print("Sorry you do not have any lists yet!.. Use [checkout <manga_name>] to search and create a list")
         return 0
     print("."*60)
+    if iter_==0:
+        with open(TEMP_FILE,'w') as f:
+            f.write("name,link,recent_chapter\n")
+        with open(LIST_LINK, 'r') as mangalist:
+            list_ = csv.reader(mangalist)
+            next(list_)
+            if manga:
+                for row in list_:
+                    if row[0] == manga:
+                        print(f"Refreshing and scraping out information for recent chapters for {manga}")
+                        content = bs.BeautifulSoup(requests.get(row[1]).content, 'html.parser')
+                        link_ref = row[1].replace("/manga/", "/chapter/") + "/chapter_"
+                        chapters_list = content.find('div', {'class': 'chapter-list'}).select(f'a[href*={link_ref}]')
+                        chapter_num_list = [x.attrs['href'][len(link_ref):] for x in chapters_list]
+                        known_index = chapter_num_list.index(row[2])
+                        if known_index == 0:
+                            print(f"Other chapters for {manga} after Chapter {row[2]} haven't been released! Please checkout after sometime.")
+                        else:
+                            print("Other Chapters have been released !")
+                            for x in range(0, known_index):
+                                print(f"Chapter {chapter_num_list[x]}")
+                            download_and_reset(link_ref, chapter_num_list[:known_index], manga,row)
+                    else:
+                        with open(TEMP_FILE, 'a') as tempfile:
+                            tempfile.write(f'{row[0]},{row[1]},{row[2]}\n')
+            else:
+                print("Refreshing and scraping out information for your manga list")
+                for row in list_:
+                    pass
+                    #refresh(row[0], 1)
+        os.remove(LIST_LINK)
+        os.renames(TEMP_FILE, LIST_LINK)
+    elif iter_==1:
+        pass
+''''
     with open(LIST_LINK,'r') as mangalist:
         list_=csv.reader(mangalist)
         next(list_)
@@ -160,14 +185,17 @@ def refresh(manga=False):
                             print(f"Chapter {chapter_num_list[x]}")
                         download_and_reset(link_ref,chapter_num_list[:known_index],manga)
                     break
+                else:
+                    with open(TEMP_FILE,'a') as tempfile:
+
             else:
                 print("Sorry,somehow the manga isn't in the list.Use [checkout <manga_name>] to add it again")
         else:
             print("Refreshing and scraping out information for your manga list")
             for row in list_:
-                refresh(row[0])
+                refresh(row[0],0)
     os.remove(LIST_LINK)
-    os.renames(TEMP_FILE,LIST_LINK)
+    os.renames(TEMP_FILE,LIST_LINK)'''
 
 if __name__=="__main__":
     print("Welcome !")
