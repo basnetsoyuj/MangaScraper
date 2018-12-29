@@ -6,6 +6,7 @@ import re
 ERR1="Sorry there was a problem ! :( Try restarting the program or check the internet connection."
 LIST_LINK="data/mangalist.csv"
 TEMP_FILE="data/mangalist_temp.csv"
+if not os.path.exists(LIST_LINK):os.makedirs("data/")
 def syntax_reminder():
     print("Syntax :")
     print("\t1) checkout <manga_name> # for searching and checking out mangas")
