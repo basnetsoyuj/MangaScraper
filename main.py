@@ -78,7 +78,7 @@ def checkout(name):
         if session.status_code==200:
             print("Searching .....",session.url)
             content=bs.BeautifulSoup(session.content,'html.parser')
-            results=content.find_all('span',{'class':'item-name'})
+            results=content.find_all('h3',{'class':'story_name'})#('span',{'class':'item-name'})
             if results:
                 n=1
                 for result in results:
