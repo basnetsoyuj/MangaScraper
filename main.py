@@ -147,7 +147,7 @@ def refresh(manga=False):
                     print(f"Refreshing and scraping out information for recent chapters for {manga}\n")
                     content = bs.BeautifulSoup(requests.get(row[1]).content, 'html.parser')
                     link_ref = row[1].replace("/manga/", "/chapter/") + "/chapter_"
-                    chapters_list = content.find('div', {'class': 'chapter-list'}).select(f'a[href*={link_ref}]')
+                    chapters_list = content.find('div', {'class': 'chapter-list'}).select(f'a[href*="{link_ref}"]')
                     chapter_num_list = [x.attrs['href'][len(link_ref):] for x in chapters_list]
                     known_index = chapter_num_list.index(row[2])
                     if known_index == 0:
@@ -174,7 +174,7 @@ def refresh(manga=False):
                 print(f"Refreshing and scraping out information for recent chapters for {row[0]}")
                 content = bs.BeautifulSoup(requests.get(row[1]).content, 'html.parser')
                 link_ref = row[1].replace("/manga/", "/chapter/") + "/chapter_"
-                chapters_list = content.find('div', {'class': 'chapter-list'}).select(f'a[href*={link_ref}]')
+                chapters_list = content.find('div', {'class': 'chapter-list'}).select(f'a[href*="{link_ref}"]')
                 chapter_num_list = [x.attrs['href'][len(link_ref):] for x in chapters_list]
                 known_index = chapter_num_list.index(row[2])
                 if known_index == 0:
